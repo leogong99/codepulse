@@ -11,10 +11,7 @@ Works with Claude Code (skill), OpenAI Codex CLI (pipe or `AGENTS.md`), Cursor/C
 ## Quick Start
 
 ```bash
-# Install globally (not yet published to npm — build and link locally instead):
-# cd /path/to/codepulse && npm run build && cd packages/cli && npm link
-
-npm install -g @codepulse/cli
+npm install -g @aicodepulse/cli
 
 # In your repo: build the index (one-time)
 codepulse init
@@ -147,9 +144,9 @@ The index is stored per-repo (not globally) so each project has its own isolated
 
 | Package | Description |
 |---|---|
-| `@codepulse/core` | Indexer engine (Tree-Sitter, SQLite, context generator) |
-| `@codepulse/cli` | `codepulse` CLI |
-| `@codepulse/mcp` | `codepulse-mcp` MCP server |
+| `@aicodepulse/core` | Indexer engine (Tree-Sitter, SQLite, context generator) |
+| `@aicodepulse/cli` | `codepulse` CLI |
+| `@aicodepulse/mcp` | `codepulse-mcp` MCP server |
 
 ---
 

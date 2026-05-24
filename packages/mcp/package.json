@@ -1,5 +1,5 @@
 {
-  "name": "@codepulse/mcp",
+  "name": "@aicodepulse/mcp",
   "version": "0.1.0",
   "description": "MCP server for CodePulse codebase indexer",
   "type": "module",
@@ -12,7 +12,7 @@
     "dev": "tsup --watch"
   },
   "dependencies": {
-    "@codepulse/core": "*",
+    "@aicodepulse/core": "*",
     "@modelcontextprotocol/sdk": "^1.29.0",
     "zod": "^3.23.8"
   },

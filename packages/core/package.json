@@ -1,5 +1,5 @@
 {
-  "name": "@codepulse/core",
+  "name": "@aicodepulse/core",
   "version": "0.1.0",
   "description": "Core indexer engine for CodePulse",
   "type": "module",
