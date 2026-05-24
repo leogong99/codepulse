@@ -1,4 +1,7 @@
 import Parser from 'tree-sitter';
+import { createRequire } from 'module';
+
+const req = createRequire(import.meta.url);
 
 export interface LanguageConfig {
   language: Parser.Language;
@@ -8,48 +11,47 @@ export interface LanguageConfig {
 
 let registry: Map<string, LanguageConfig> | null = null;
 
-async function buildRegistry(): Promise<Map<string, LanguageConfig>> {
+function buildRegistry(): Map<string, LanguageConfig> {
   const map = new Map<string, LanguageConfig>();
 
-  const entries: [string[], string, () => Promise<{ default: Parser.Language }>][] = [
-    [['.js', '.mjs', '.cjs'], 'javascript', () => import('tree-sitter-javascript') as Promise<{ default: Parser.Language }>],
-    [['.ts', '.tsx', '.mts', '.cts'], 'typescript', () => import('tree-sitter-typescript').then(m => ({ default: (m as unknown as { typescript: Parser.Language }).typescript }))],
-    [['.py', '.pyw'], 'python', () => import('tree-sitter-python') as Promise<{ default: Parser.Language }>],
-    [['.go'], 'go', () => import('tree-sitter-go') as Promise<{ default: Parser.Language }>],
-    [['.rs'], 'rust', () => import('tree-sitter-rust') as Promise<{ default: Parser.Language }>],
-    [['.java'], 'java', () => import('tree-sitter-java') as Promise<{ default: Parser.Language }>],
-    [['.c', '.h'], 'c', () => import('tree-sitter-c') as Promise<{ default: Parser.Language }>],
-    [['.cpp', '.cc', '.cxx', '.hpp', '.hxx'], 'cpp', () => import('tree-sitter-cpp') as Promise<{ default: Parser.Language }>],
-    [['.cs'], 'csharp', () => import('tree-sitter-c-sharp') as Promise<{ default: Parser.Language }>],
-    [['.rb'], 'ruby', () => import('tree-sitter-ruby') as Promise<{ default: Parser.Language }>],
-    [['.php'], 'php', () => import('tree-sitter-php').then(m => ({ default: (m as unknown as { php: Parser.Language }).php }))],
-    [['.sh', '.bash'], 'bash', () => import('tree-sitter-bash') as Promise<{ default: Parser.Language }>],
-    [['.kt', '.kts'], 'kotlin', () => import('tree-sitter-kotlin') as Promise<{ default: Parser.Language }>],
-    [['.swift'], 'swift', () => import('tree-sitter-swift') as Promise<{ default: Parser.Language }>],
+  const entries: [string[], string, string, ((mod: unknown) => Parser.Language)?][] = [
+    [['.js', '.mjs', '.cjs'], 'javascript', 'tree-sitter-javascript'],
+    [['.ts', '.tsx', '.mts', '.cts'], 'typescript', 'tree-sitter-typescript', (m) => (m as { typescript: Parser.Language }).typescript],
+    [['.py', '.pyw'], 'python', 'tree-sitter-python'],
+    [['.go'], 'go', 'tree-sitter-go'],
+    [['.rs'], 'rust', 'tree-sitter-rust'],
+    [['.java'], 'java', 'tree-sitter-java'],
+    [['.c', '.h'], 'c', 'tree-sitter-c'],
+    [['.cpp', '.cc', '.cxx', '.hpp', '.hxx'], 'cpp', 'tree-sitter-cpp'],
+    [['.cs'], 'csharp', 'tree-sitter-c-sharp'],
+    [['.rb'], 'ruby', 'tree-sitter-ruby'],
+    [['.php'], 'php', 'tree-sitter-php', (m) => (m as { php: Parser.Language }).php],
+    [['.sh', '.bash'], 'bash', 'tree-sitter-bash'],
+    [['.kt', '.kts'], 'kotlin', 'tree-sitter-kotlin'],
+    [['.swift'], 'swift', 'tree-sitter-swift'],
   ];
 
-  await Promise.allSettled(entries.map(async ([exts, name, loader]) => {
+  for (const [exts, name, pkg, extract] of entries) {
     try {
-      const mod = await loader();
-      const lang = mod.default as Parser.Language;
+      const mod = req(pkg);
+      const lang = extract ? extract(mod) : (mod as Parser.Language);
       const config: LanguageConfig = { language: lang, extensions: exts, name };
       for (const ext of exts) map.set(ext, config);
     } catch {
-      // grammar not installed — skip silently
+      // grammar not installed or platform unsupported — skip silently
     }
-  }));
+  }
 
   return map;
 }
 
-export async function getRegistry(): Promise<Map<string, LanguageConfig>> {
-  if (!registry) registry = await buildRegistry();
+export function getRegistry(): Map<string, LanguageConfig> {
+  if (!registry) registry = buildRegistry();
   return registry;
 }
 
-export async function getLanguageForExtension(ext: string): Promise<LanguageConfig | null> {
-  const reg = await getRegistry();
-  return reg.get(ext) ?? null;
+export function getLanguageForExtension(ext: string): LanguageConfig | null {
+  return getRegistry().get(ext) ?? null;
 }
 
 export function extensionFromPath(filePath: string): string {

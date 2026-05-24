@@ -1,0 +1,114 @@
+# CodePulse
+
+**Token-efficient codebase indexing for AI coding tools.**
+
+AI assistants waste 60–80% of their token budget exploring your repo on every new conversation. CodePulse maintains a persistent, git-diff-aware index and injects a compact snapshot — repo structure, exported symbols, import graph — at session start.
+
+Works with Claude Code (skill), Cursor/Continue.dev (MCP server), and any tool that can consume CLI output.
+
+---
+
+## Quick Start
+
+```bash
+# Install globally
+npm install -g @codepulse/cli
+
+# In your repo: build the index (one-time)
+codepulse init
+
+# Emit context into any AI session
+codepulse context
+
+# Keep it fresh after commits
+codepulse update
+```
+
+In Claude Code: install the skill, then type `/codepulse` at the start of a session.
+
+---
+
+## Commands
+
+| Command | Description |
+|---|---|
+| `codepulse init` | Build the initial full index |
+| `codepulse update` | Incremental update (git-diff-aware) |
+| `codepulse update --full` | Force full re-index |
+| `codepulse context` | Emit context snapshot (default: 4000 tokens, XML) |
+| `codepulse context --budget 8000` | Larger budget for bigger repos |
+| `codepulse context --focus src/auth` | Deep detail on one subsystem |
+| `codepulse context --format markdown` | Human-readable output |
+| `codepulse stats` | Show index stats |
+| `codepulse watch` | Auto-update on file changes |
+
+---
+
+## Supported Languages
+
+JavaScript, TypeScript, Python, Go, Rust, Java, C, C++, C#, Ruby, PHP, Bash, Kotlin, Swift
+
+---
+
+## Claude Code Skill
+
+Copy `skill/codepulse/` into your project's `.claude/skills/` directory, then use `/codepulse` in any Claude Code session.
+
+**Always-on injection (opt-in):** Add to `.claude/settings.json`:
+
+```json
+{
+  "hooks": {
+    "PreToolUse": [{
+      "matcher": ".*",
+      "hooks": [{ "type": "command", "command": "codepulse context --format xml" }]
+    }]
+  }
+}
+```
+
+---
+
+## MCP Server (Cursor, Continue.dev, etc.)
+
+Add to your MCP config:
+
+```json
+{
+  "codepulse": {
+    "command": "codepulse-mcp",
+    "args": []
+  }
+}
+```
+
+Tools available:
+- `get_context(budget_tokens, focus_path?)` — full context snapshot
+- `search_symbols(query)` — find exported symbols by name
+- `get_file_summary(path)` — symbols, imports, and importers for one file
+
+---
+
+## How It Works
+
+1. **Index:** Tree-Sitter parses all source files, extracting exported symbols and import edges into a SQLite database (`.codepulse/index.db`)
+2. **Update:** On each `update`, only files changed since the last indexed git commit are re-parsed — a 50k-line repo updates in milliseconds
+3. **Context:** Given a token budget, a layered generator fills it from most to least important: repo overview → directory map → symbol table → import graph
+
+The index is stored per-repo (not globally) so each project has its own isolated snapshot.
+
+---
+
+## Packages
+
+| Package | Description |
+|---|---|
+| `@codepulse/core` | Indexer engine (Tree-Sitter, SQLite, context generator) |
+| `@codepulse/cli` | `codepulse` CLI |
+| `@codepulse/mcp` | `codepulse-mcp` MCP server |
+
+---
+
+## License
+
+MIT

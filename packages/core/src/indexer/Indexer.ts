@@ -167,7 +167,7 @@ export class Indexer {
   }
 
   async parseAndIndex(absolutePath: string, relativePath: string): Promise<void> {
-    const langConfig = await getLanguageForExtension(extensionFromPath(relativePath));
+    const langConfig = getLanguageForExtension(extensionFromPath(relativePath));
     if (!langConfig) return;
 
     let content: string;
