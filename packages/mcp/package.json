@@ -1,0 +1,24 @@
+{
+  "name": "@codepulse/mcp",
+  "version": "0.1.0",
+  "description": "MCP server for CodePulse codebase indexer",
+  "type": "module",
+  "bin": {
+    "codepulse-mcp": "./dist/index.js"
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch"
+  },
+  "dependencies": {
+    "@codepulse/core": "*",
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.5.0",
+    "tsup": "^8.2.0"
+  }
+}

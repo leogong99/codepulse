@@ -1,0 +1,46 @@
+{
+  "name": "@codepulse/core",
+  "version": "0.1.0",
+  "description": "Core indexer engine for CodePulse",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch"
+  },
+  "dependencies": {
+    "tree-sitter": "^0.25.0",
+    "tree-sitter-javascript": "^0.25.0",
+    "tree-sitter-typescript": "^0.23.2",
+    "tree-sitter-python": "^0.25.0",
+    "tree-sitter-go": "^0.25.0",
+    "tree-sitter-rust": "^0.24.0",
+    "tree-sitter-java": "^0.23.5",
+    "tree-sitter-c": "^0.24.1",
+    "tree-sitter-cpp": "^0.23.4",
+    "tree-sitter-c-sharp": "^0.23.5",
+    "tree-sitter-ruby": "^0.23.1",
+    "tree-sitter-php": "^0.24.2",
+    "tree-sitter-bash": "^0.25.1",
+    "tree-sitter-kotlin": "^0.3.8",
+    "tree-sitter-swift": "^0.7.1",
+    "better-sqlite3": "^12.10.0",
+    "gpt-tokenizer": "^3.4.0",
+    "ignore": "^5.3.2",
+    "glob": "^11.0.0"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.11",
+    "@types/node": "^22.0.0",
+    "typescript": "^5.5.0",
+    "tsup": "^8.2.0"
+  }
+}

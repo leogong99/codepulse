@@ -1,0 +1,19 @@
+{
+  "name": "codepulse-monorepo",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces --legacy-peer-deps",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "clean": "find packages -name dist -type d -exec rm -rf {} + 2>/dev/null; true"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.5.0",
+    "tsup": "^8.2.0",
+    "vitest": "^2.0.0"
+  }
+}
