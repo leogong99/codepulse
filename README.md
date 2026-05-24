@@ -11,7 +11,9 @@ Works with Claude Code (skill), OpenAI Codex CLI (pipe or `AGENTS.md`), Cursor/C
 ## Quick Start
 
 ```bash
-# Install globally
+# Install globally (not yet published to npm — build and link locally instead):
+# cd /path/to/codepulse && npm run build && cd packages/cli && npm link
+
 npm install -g @codepulse/cli
 
 # In your repo: build the index (one-time)
