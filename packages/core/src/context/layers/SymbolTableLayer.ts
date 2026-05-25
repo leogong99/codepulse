@@ -1,8 +1,9 @@
 import type { DB } from '../../storage/Database.js';
 import { SymbolRepository } from '../../storage/SymbolRepository.js';
 import { countTokens } from '../TokenCounter.js';
+import { scoreFile } from '../TaskAnalyzer.js';
 
-export function renderSymbolTable(db: DB, budget: number): { content: string; truncated: boolean } {
+export function renderSymbolTable(db: DB, budget: number, taskKeywords: string[] = []): { content: string; truncated: boolean } {
   const repo = new SymbolRepository(db);
   const symbols = repo.getAllExported();
 
@@ -13,8 +14,11 @@ export function renderSymbolTable(db: DB, budget: number): { content: string; tr
     byFile.get(s.filePath)!.push(s);
   }
 
-  // Sort files by symbol count descending (most-exported files first)
-  const sorted = [...byFile.entries()].sort((a, b) => b[1].length - a[1].length);
+  // Sort by task relevance first, then by symbol count
+  const sorted = [...byFile.entries()].sort((a, b) => {
+    const scoreDiff = scoreFile(b[0], b[1], taskKeywords) - scoreFile(a[0], a[1], taskKeywords);
+    return scoreDiff !== 0 ? scoreDiff : b[1].length - a[1].length;
+  });
 
   const lines: string[] = [];
   let usedTokens = 0;

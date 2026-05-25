@@ -58,6 +58,8 @@ export interface ContextRequest {
   focusPath?: string;
   format: 'markdown' | 'xml';
   layers?: LayerName[];
+  taskKeywords?: string[];  // rank content by relevance to these keywords
+  autoBudget?: boolean;     // scale budget automatically by repo size
 }
 
 export interface LayerResult {
@@ -72,6 +74,7 @@ export interface ContextResult {
   budgetTokens: number;
   layers: LayerResult[];
   rendered: string;
+  skipped?: boolean;
 }
 
 export interface CodePulseConfig {

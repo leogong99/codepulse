@@ -7,4 +7,5 @@ export default defineConfig({
   sourcemap: true,
   clean: true,
   target: 'node22',
+  external: ['better-sqlite3', 'tree-sitter', /^tree-sitter-/],
 });

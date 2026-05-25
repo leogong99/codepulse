@@ -1,7 +1,7 @@
 import { join } from 'path';
 import { existsSync } from 'fs';
 import pc from 'picocolors';
-import { openDatabase, MetaRepository, FileRepository } from '@codepulse/core';
+import { openDatabase, MetaRepository, FileRepository } from '@aicodepulse/core';
 
 export function statsCommand(repoRoot: string): void {
   const dbPath = join(repoRoot, '.codepulse', 'index.db');

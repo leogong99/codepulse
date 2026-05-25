@@ -1,13 +1,16 @@
 import { join } from 'path';
 import { existsSync } from 'fs';
 import pc from 'picocolors';
-import { openDatabase, generateContext, DEFAULT_CONFIG } from '@codepulse/core';
-import type { ContextRequest } from '@codepulse/core';
+import { openDatabase, generateContext, DEFAULT_CONFIG } from '@aicodepulse/core';
+import type { ContextRequest } from '@aicodepulse/core';
+import { extractKeywords } from '@aicodepulse/core';
 
 export interface ContextOptions {
   budget: number;
   focus?: string;
   format: 'markdown' | 'xml';
+  task?: string;
+  auto?: boolean;
 }
 
 export async function contextCommand(repoRoot: string, options: ContextOptions): Promise<void> {
@@ -18,17 +21,27 @@ export async function contextCommand(repoRoot: string, options: ContextOptions):
   }
 
   const db = openDatabase(dbPath);
+  const taskKeywords = options.task ? extractKeywords(options.task) : [];
 
   const request: ContextRequest = {
     budgetTokens: options.budget,
     focusPath: options.focus,
     format: options.format,
+    taskKeywords,
+    autoBudget: options.auto,
   };
 
   const result = generateContext(db, request, DEFAULT_CONFIG);
+
+  if (result.skipped) {
+    process.stderr.write(pc.dim('[codepulse] repo too small to benefit from context injection — skipped\n'));
+    return;
+  }
+
   process.stdout.write(result.rendered);
   process.stdout.write('\n');
 
-  // Print token stats to stderr so they don't pollute piped output
-  process.stderr.write(pc.dim(`\n[codepulse] ${result.totalTokens}/${result.budgetTokens} tokens used\n`));
+  const kwNote = taskKeywords.length > 0 ? ` | task keywords: ${taskKeywords.join(', ')}` : '';
+  const autoNote = options.auto ? ' (auto-budget)' : '';
+  process.stderr.write(pc.dim(`[codepulse] ${result.totalTokens}/${result.budgetTokens} tokens used${autoNote}${kwNote}\n`));
 }

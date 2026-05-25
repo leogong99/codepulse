@@ -1,6 +1,6 @@
 import { z } from 'zod';
-import { SymbolRepository } from '@codepulse/core';
-import type { DB } from '@codepulse/core';
+import { SymbolRepository } from '@aicodepulse/core';
+import type { DB } from '@aicodepulse/core';
 
 export const searchSymbolsSchema = {
   query: z.string().min(1).describe('Symbol name to search for (partial match)'),

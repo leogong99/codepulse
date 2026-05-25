@@ -1,12 +1,14 @@
 {
   "name": "@aicodepulse/mcp",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "MCP server for CodePulse codebase indexer",
   "type": "module",
   "bin": {
     "codepulse-mcp": "./dist/index.js"
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch"

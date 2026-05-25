@@ -1,7 +1,7 @@
 import { join } from 'path';
 import { existsSync } from 'fs';
 import pc from 'picocolors';
-import { openDatabase, Indexer, DEFAULT_CONFIG } from '@codepulse/core';
+import { openDatabase, Indexer, DEFAULT_CONFIG } from '@aicodepulse/core';
 
 export async function updateCommand(repoRoot: string, full: boolean): Promise<void> {
   const dbPath = join(repoRoot, '.codepulse', 'index.db');

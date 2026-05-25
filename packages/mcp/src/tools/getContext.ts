@@ -1,7 +1,7 @@
 import { z } from 'zod';
-import { generateContext, DEFAULT_CONFIG } from '@codepulse/core';
-import type { DB } from '@codepulse/core';
-import type { ContextRequest } from '@codepulse/core';
+import { generateContext, DEFAULT_CONFIG } from '@aicodepulse/core';
+import type { DB } from '@aicodepulse/core';
+import type { ContextRequest } from '@aicodepulse/core';
 
 export const getContextSchema = {
   budget_tokens: z.number().int().min(500).max(32000).default(4000).describe('Token budget for the context snapshot'),

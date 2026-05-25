@@ -8,6 +8,30 @@ Works with Claude Code (skill), OpenAI Codex CLI (pipe or `AGENTS.md`), Cursor/C
 
 ---
 
+## Token Savings
+
+Without CodePulse, an AI assistant typically reads 10–30 files per session just to understand your repo before it can help. With CodePulse, it gets a pre-built snapshot instead — no exploration needed.
+
+| Repo Size | Without CodePulse | With CodePulse | Saved |
+|---|---|---|---|
+| Small (< 5k lines) | ~8,000 tokens | ~2,000 tokens | ~75% |
+| Medium (5k–50k lines) | ~25,000 tokens | ~4,000 tokens | ~84% |
+| Large (50k+ lines) | ~60,000 tokens | ~8,000 tokens | ~87% |
+
+> Estimates based on typical file-read patterns. Actual savings vary by repo structure and session type. Use `codepulse context --budget` to tune the snapshot size.
+
+At current API pricing (Claude Sonnet ~$3/MTok input), saving 20,000 tokens per session adds up fast across a team:
+
+| Sessions/day | Tokens saved/day | Monthly savings (per developer) |
+|---|---|---|
+| 5 | 100,000 | ~$9 |
+| 20 | 400,000 | ~$36 |
+| 50 | 1,000,000 | ~$90 |
+
+Beyond cost, fewer tokens spent on exploration means faster responses and more of the context window available for actual work.
+
+---
+
 ## Quick Start
 
 ```bash
@@ -24,6 +48,79 @@ codepulse update
 ```
 
 In Claude Code: install the skill, then type `/codepulse` at the start of a session.
+
+---
+
+## How to Use
+
+There are three ways to use CodePulse depending on your AI tool. Pick the one that fits your workflow.
+
+### Option 1 — CLI (any AI tool)
+
+Install and index your repo:
+
+```bash
+npm install -g @aicodepulse/cli
+cd your-project
+codepulse init
+```
+
+Pipe context into any AI session:
+
+```bash
+codepulse context --format markdown
+```
+
+Keep the index up to date:
+
+```bash
+codepulse update        # incremental (fast)
+codepulse watch         # auto-update on file changes
+```
+
+### Option 2 — Claude Code Skill
+
+1. Copy `skill/codepulse/` into your project's `.claude/skills/` directory
+2. Run `codepulse init` in your repo once
+3. Type `/codepulse` at the start of any Claude Code session — it injects a fresh context snapshot automatically
+
+For always-on injection without typing the command, add this to `.claude/settings.json`:
+
+```json
+{
+  "hooks": {
+    "PreToolUse": [{
+      "matcher": ".*",
+      "hooks": [{ "type": "command", "command": "codepulse context --format xml" }]
+    }]
+  }
+}
+```
+
+### Option 3 — MCP Server (Cursor, Continue.dev, etc.)
+
+Install the MCP package:
+
+```bash
+npm install -g @aicodepulse/cli @aicodepulse/mcp
+cd your-project && codepulse init
+```
+
+Add to your MCP config (e.g. `.cursor/mcp.json`):
+
+```json
+{
+  "codepulse": {
+    "command": "codepulse-mcp",
+    "args": []
+  }
+}
+```
+
+The MCP server exposes three tools your AI editor can call on demand:
+- `get_context(budget_tokens, focus_path?)` — full context snapshot
+- `search_symbols(query)` — find exported symbols by name
+- `get_file_summary(path)` — symbols, imports, and importers for one file
 
 ---
 

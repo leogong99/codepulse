@@ -1,12 +1,15 @@
 {
   "name": "@aicodepulse/cli",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "CLI for CodePulse codebase indexer",
   "type": "module",
   "bin": {
     "codepulse": "./bin/codepulse.js"
   },
-  "files": ["bin", "dist"],
+  "files": [
+    "bin",
+    "dist"
+  ],
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch"

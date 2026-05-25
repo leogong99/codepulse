@@ -1,7 +1,7 @@
 import { mkdirSync, writeFileSync, existsSync } from 'fs';
 import { join } from 'path';
 import pc from 'picocolors';
-import { openDatabase, Indexer, DEFAULT_CONFIG } from '@codepulse/core';
+import { openDatabase, Indexer, DEFAULT_CONFIG } from '@aicodepulse/core';
 
 export async function initCommand(repoRoot: string): Promise<void> {
   const dotDir = join(repoRoot, '.codepulse');

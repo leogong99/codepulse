@@ -37,11 +37,15 @@ program
   .option('-b, --budget <tokens>', 'Token budget', '4000')
   .option('-f, --focus <path>', 'Focus path (file or directory)')
   .option('--format <format>', 'Output format: markdown or xml', 'xml')
+  .option('--task <description>', 'Task description — ranks relevant files first')
+  .option('--auto', 'Auto-scale budget by repo size (skips tiny repos)')
   .action(async (opts) => {
     await contextCommand(resolve(opts.root), {
       budget: Number(opts.budget),
       focus: opts.focus,
       format: opts.format as 'markdown' | 'xml',
+      task: opts.task,
+      auto: opts.auto,
     });
   });
 

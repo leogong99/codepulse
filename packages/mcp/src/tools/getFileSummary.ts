@@ -1,6 +1,6 @@
 import { z } from 'zod';
-import { SymbolRepository, FileRepository } from '@codepulse/core';
-import type { DB } from '@codepulse/core';
+import { SymbolRepository, FileRepository } from '@aicodepulse/core';
+import type { DB } from '@aicodepulse/core';
 
 export const getFileSummarySchema = {
   path: z.string().min(1).describe('Relative file path within the repository'),
