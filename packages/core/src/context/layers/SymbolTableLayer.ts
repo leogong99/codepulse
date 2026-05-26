@@ -1,11 +1,21 @@
 import type { DB } from '../../storage/Database.js';
 import { SymbolRepository } from '../../storage/SymbolRepository.js';
+import { FileRepository } from '../../storage/FileRepository.js';
 import { countTokens } from '../TokenCounter.js';
 import { scoreFile } from '../TaskAnalyzer.js';
 
 export function renderSymbolTable(db: DB, budget: number, taskKeywords: string[] = []): { content: string; truncated: boolean } {
   const repo = new SymbolRepository(db);
+  const fileRepo = new FileRepository(db);
   const symbols = repo.getAllExported();
+
+  // Build summary lookup
+  const summaryMap = new Map<string, string | null>();
+  if (taskKeywords.length > 0) {
+    for (const { path, summary } of fileRepo.getSummaries()) {
+      summaryMap.set(path, summary);
+    }
+  }
 
   // Group by file
   const byFile = new Map<string, typeof symbols>();
@@ -14,9 +24,11 @@ export function renderSymbolTable(db: DB, budget: number, taskKeywords: string[]
     byFile.get(s.filePath)!.push(s);
   }
 
-  // Sort by task relevance first, then by symbol count
+  // Sort by task relevance first (using summary), then by symbol count
   const sorted = [...byFile.entries()].sort((a, b) => {
-    const scoreDiff = scoreFile(b[0], b[1], taskKeywords) - scoreFile(a[0], a[1], taskKeywords);
+    const scoreDiff =
+      scoreFile(b[0], b[1], taskKeywords, summaryMap.get(b[0]) ?? null) -
+      scoreFile(a[0], a[1], taskKeywords, summaryMap.get(a[0]) ?? null);
     return scoreDiff !== 0 ? scoreDiff : b[1].length - a[1].length;
   });
 

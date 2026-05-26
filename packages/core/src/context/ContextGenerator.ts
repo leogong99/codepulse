@@ -1,6 +1,6 @@
 import type { DB } from '../storage/Database.js';
 import type { ContextRequest, ContextResult, LayerResult, LayerName, CodePulseConfig } from '../types.js';
-import { MetaRepository } from '../storage/MetaRepository.js';
+import { FileRepository } from '../storage/FileRepository.js';
 import { allocateBudget } from './BudgetAllocator.js';
 import { renderRepoOverview } from './layers/RepoOverviewLayer.js';
 import { renderDirectoryMap } from './layers/DirectoryMapLayer.js';
@@ -11,15 +11,19 @@ import { countTokens } from './TokenCounter.js';
 
 const DEFAULT_LAYERS: LayerName[] = ['repo_overview', 'directory_map', 'symbol_table', 'import_graph', 'focus'];
 
-const SKIP_THRESHOLD = 10;       // repos smaller than this get skipped entirely
+// Complexity thresholds (sum of per-file scores: exported*2 + imports + lines/50)
+// A 10-file TS project with ~5 exports each ≈ complexity 100
+// A 50-file project ≈ complexity 500+
+// A 150-file project ≈ complexity 1500+
+const SKIP_THRESHOLD = 50;
 const SMALL_REPO_BUDGET = 800;
 const MEDIUM_REPO_BUDGET = 2000;
 const LARGE_REPO_BUDGET = 4000;
 
-function autoBudget(totalFiles: number): number | null {
-  if (totalFiles < SKIP_THRESHOLD) return null; // null = skip
-  if (totalFiles < 30) return SMALL_REPO_BUDGET;
-  if (totalFiles < 150) return MEDIUM_REPO_BUDGET;
+function autoBudget(totalComplexity: number): number | null {
+  if (totalComplexity < SKIP_THRESHOLD) return null; // null = skip
+  if (totalComplexity < 500) return SMALL_REPO_BUDGET;
+  if (totalComplexity < 1500) return MEDIUM_REPO_BUDGET;
   return LARGE_REPO_BUDGET;
 }
 
@@ -51,12 +55,12 @@ export function generateContext(db: DB, request: ContextRequest, config: CodePul
   const hasFocus = Boolean(request.focusPath);
   const taskKeywords = request.taskKeywords ?? [];
 
-  // Resolve budget — auto-scale by repo size if requested
+  // Resolve budget — auto-scale by repo complexity if requested
   let budgetTokens = request.budgetTokens;
   let skipped = false;
   if (request.autoBudget) {
-    const meta = new MetaRepository(db).getIndexMeta();
-    const resolved = autoBudget(meta.totalFiles);
+    const totalComplexity = new FileRepository(db).getTotalComplexity();
+    const resolved = autoBudget(totalComplexity);
     if (resolved === null) {
       skipped = true;
     } else {
@@ -91,10 +95,21 @@ export function generateContext(db: DB, request: ContextRequest, config: CodePul
   const rendered = request.format === 'xml' ? wrapXML(results) : wrapMarkdown(results);
   const totalTokens = countTokens(rendered);
 
+  // Warn if symbol_table was truncated while auto-budget was active
+  let truncationWarning: string | undefined;
+  const symLayer = results.find(r => r.layer === 'symbol_table');
+  if (symLayer?.truncated && request.autoBudget) {
+    const nextBudget = budgetTokens === SMALL_REPO_BUDGET ? MEDIUM_REPO_BUDGET
+      : budgetTokens === MEDIUM_REPO_BUDGET ? LARGE_REPO_BUDGET
+      : budgetTokens * 2;
+    truncationWarning = `symbol table truncated — some files omitted. Re-run with --budget ${nextBudget} for full coverage.`;
+  }
+
   return {
     totalTokens,
     budgetTokens,
     layers: results,
     rendered,
+    truncationWarning,
   };
 }

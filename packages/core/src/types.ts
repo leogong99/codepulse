@@ -20,6 +20,8 @@ export interface FileRecord {
   linesTotal: number;
   indexedAt: number;
   isDeleted: boolean;
+  summary: string | null;
+  complexityScore: number;
 }
 
 export interface CodeSymbol {
@@ -75,6 +77,7 @@ export interface ContextResult {
   layers: LayerResult[];
   rendered: string;
   skipped?: boolean;
+  truncationWarning?: string;
 }
 
 export interface CodePulseConfig {

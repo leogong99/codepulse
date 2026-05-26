@@ -13,6 +13,33 @@ import { walkFiles } from './FileWalker.js';
 import { getHeadCommit, getChangedFiles } from './GitDiff.js';
 import type { CodePulseConfig } from '../types.js';
 
+function buildFileSummary(
+  language: string,
+  symbols: Omit<import('../types.js').CodeSymbol, 'id'>[],
+  imports: Omit<import('../types.js').ImportEdge, 'id'>[],
+): string {
+  const exported = symbols.filter(s => s.isExported);
+  const packages = [...new Set(imports.filter(i => i.toPackage).map(i => i.toPackage!))];
+  const parts: string[] = [`lang:${language}`];
+  if (exported.length > 0) {
+    const names = exported.slice(0, 6).map(s => `${s.name}(${s.kind})`).join(' ');
+    parts.push(`exports:${names}${exported.length > 6 ? ` +${exported.length - 6}` : ''}`);
+  }
+  if (packages.length > 0) {
+    parts.push(`uses:${packages.slice(0, 6).join(' ')}`);
+  }
+  return parts.join(' ');
+}
+
+function computeComplexity(
+  linesTotal: number,
+  symbols: Omit<import('../types.js').CodeSymbol, 'id'>[],
+  imports: Omit<import('../types.js').ImportEdge, 'id'>[],
+): number {
+  const exported = symbols.filter(s => s.isExported).length;
+  return exported * 2 + imports.length + Math.floor(linesTotal / 50);
+}
+
 export interface IndexStats {
   filesAdded: number;
   filesUpdated: number;
@@ -154,6 +181,8 @@ export class Indexer {
       linesTotal: lines,
       indexedAt: Date.now(),
       isDeleted: false,
+      summary: existing?.summary ?? null,
+      complexityScore: existing?.complexityScore ?? 0,
     });
 
     // We use the actual file id (insert returns rowid, but on conflict we need the real id)
@@ -183,11 +212,13 @@ export class Indexer {
     const record = this.files.getByPath(relativePath);
     if (!record) return;
 
-    // Update language now that we know it
-    this.files.upsert({ ...record, language: langConfig.name });
-
     const symbols = extractSymbols(tree, relativePath, record.id, langConfig.name, content);
     const imports = extractImports(tree, relativePath, record.id, langConfig.name);
+
+    const summary = buildFileSummary(langConfig.name, symbols, imports);
+    const complexityScore = computeComplexity(record.linesTotal, symbols, imports);
+
+    this.files.upsert({ ...record, language: langConfig.name, summary, complexityScore });
 
     this.symbols.deleteByFileId(record.id);
     if (symbols.length > 0) this.symbols.insertSymbols(record.id, symbols);

@@ -1,6 +1,6 @@
 import BetterSqlite3 from 'better-sqlite3';
 
-const SCHEMA_VERSION = 1;
+const SCHEMA_VERSION = 2;
 
 const SCHEMA_SQL = `
 CREATE TABLE IF NOT EXISTS index_meta (
@@ -9,14 +9,16 @@ CREATE TABLE IF NOT EXISTS index_meta (
 );
 
 CREATE TABLE IF NOT EXISTS file_records (
-  id           INTEGER PRIMARY KEY AUTOINCREMENT,
-  path         TEXT NOT NULL UNIQUE,
-  language     TEXT NOT NULL,
-  content_hash TEXT NOT NULL,
-  size_bytes   INTEGER NOT NULL,
-  lines_total  INTEGER NOT NULL,
-  indexed_at   INTEGER NOT NULL,
-  is_deleted   INTEGER NOT NULL DEFAULT 0
+  id               INTEGER PRIMARY KEY AUTOINCREMENT,
+  path             TEXT NOT NULL UNIQUE,
+  language         TEXT NOT NULL,
+  content_hash     TEXT NOT NULL,
+  size_bytes       INTEGER NOT NULL,
+  lines_total      INTEGER NOT NULL,
+  indexed_at       INTEGER NOT NULL,
+  is_deleted       INTEGER NOT NULL DEFAULT 0,
+  summary          TEXT,
+  complexity_score INTEGER NOT NULL DEFAULT 0
 );
 CREATE INDEX IF NOT EXISTS idx_file_language ON file_records(language);
 CREATE INDEX IF NOT EXISTS idx_file_deleted  ON file_records(is_deleted);
@@ -65,7 +67,22 @@ function runMigrations(db: DB): void {
   db.exec(SCHEMA_SQL);
 
   const existing = db.prepare("SELECT value FROM index_meta WHERE key = 'schema_version'").get() as { value: string } | undefined;
+  const currentVersion = existing ? Number(existing.value) : 0;
+
+  if (currentVersion < 2) {
+    // Add summary and complexity_score columns if upgrading from v1
+    const cols = (db.prepare("PRAGMA table_info(file_records)").all() as { name: string }[]).map(r => r.name);
+    if (!cols.includes('summary')) {
+      db.exec('ALTER TABLE file_records ADD COLUMN summary TEXT');
+    }
+    if (!cols.includes('complexity_score')) {
+      db.exec('ALTER TABLE file_records ADD COLUMN complexity_score INTEGER NOT NULL DEFAULT 0');
+    }
+  }
+
   if (!existing) {
     db.prepare("INSERT INTO index_meta (key, value) VALUES ('schema_version', ?)").run(String(SCHEMA_VERSION));
+  } else if (currentVersion < SCHEMA_VERSION) {
+    db.prepare("UPDATE index_meta SET value = ? WHERE key = 'schema_version'").run(String(SCHEMA_VERSION));
   }
 }

@@ -34,18 +34,19 @@ program
   .command('context')
   .description('Emit a token-budgeted codebase context snapshot')
   .option('-r, --root <path>', 'Repository root', '.')
-  .option('-b, --budget <tokens>', 'Token budget', '4000')
+  .option('-b, --budget <tokens>', 'Token budget (default: 4000, or auto-scaled with --auto)')
   .option('-f, --focus <path>', 'Focus path (file or directory)')
   .option('--format <format>', 'Output format: markdown or xml', 'xml')
   .option('--task <description>', 'Task description — ranks relevant files first')
-  .option('--auto', 'Auto-scale budget by repo size (skips tiny repos)')
+  .option('--auto', 'Auto-scale budget by repo complexity (skips tiny repos)')
   .action(async (opts) => {
+    const explicitBudget = opts.budget !== undefined;
     await contextCommand(resolve(opts.root), {
-      budget: Number(opts.budget),
+      budget: Number(opts.budget ?? 4000),
       focus: opts.focus,
       format: opts.format as 'markdown' | 'xml',
       task: opts.task,
-      auto: opts.auto,
+      auto: opts.auto && !explicitBudget, // explicit --budget always wins over --auto
     });
   });
 

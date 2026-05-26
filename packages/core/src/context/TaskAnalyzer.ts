@@ -15,13 +15,20 @@ export function extractKeywords(task: string): string[] {
     .filter(w => w.length > 2 && !STOPWORDS.has(w));
 }
 
-export function scoreFile(filePath: string, symbols: CodeSymbol[], keywords: string[]): number {
+export function scoreFile(
+  filePath: string,
+  symbols: CodeSymbol[],
+  keywords: string[],
+  summary: string | null = null,
+): number {
   if (keywords.length === 0) return 0;
   const pathLower = filePath.toLowerCase();
+  const summaryLower = summary?.toLowerCase() ?? '';
   let score = 0;
 
   for (const kw of keywords) {
     if (pathLower.includes(kw)) score += 3;
+    if (summaryLower.includes(kw)) score += 2;  // summary is rich: lang, export names, packages
     for (const sym of symbols) {
       if (sym.name.toLowerCase().includes(kw)) score += 2;
       if (sym.signature?.toLowerCase().includes(kw)) score += 1;
