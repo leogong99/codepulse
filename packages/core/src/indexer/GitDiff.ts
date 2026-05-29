@@ -16,6 +16,21 @@ export function getHeadCommit(repoRoot: string): string {
   }
 }
 
+export function getFileChangeCounts(repoRoot: string): Map<string, number> {
+  const counts = new Map<string, number>();
+  try {
+    const output = execSync(
+      'git log --format="" --name-only',
+      { cwd: repoRoot, encoding: 'utf8', maxBuffer: 10 * 1024 * 1024 }
+    );
+    for (const line of output.split('\n')) {
+      const f = line.trim();
+      if (f) counts.set(f, (counts.get(f) ?? 0) + 1);
+    }
+  } catch { /* not a git repo or no commits */ }
+  return counts;
+}
+
 export function getChangedFiles(repoRoot: string, sinceCommit: string): ChangedFile[] | null {
   if (!sinceCommit) return null;
 

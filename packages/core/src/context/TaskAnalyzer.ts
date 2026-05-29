@@ -10,7 +10,7 @@ const STOPWORDS = new Set([
 export function extractKeywords(task: string): string[] {
   return task
     .toLowerCase()
-    .replace(/[^a-z0-9\s_/-]/g, ' ')
+    .replace(/[^a-z0-9\s]/g, ' ')  // split on all non-alphanumeric (incl. / . - _)
     .split(/\s+/)
     .filter(w => w.length > 2 && !STOPWORDS.has(w));
 }

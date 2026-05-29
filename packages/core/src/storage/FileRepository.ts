@@ -13,6 +13,7 @@ function rowToFile(row: Record<string, unknown>): FileRecord {
     isDeleted: Boolean(row.is_deleted),
     summary: (row.summary as string | null) ?? null,
     complexityScore: (row.complexity_score as number) ?? 0,
+    changeCount: (row.change_count as number) ?? 0,
   };
 }
 
@@ -21,8 +22,8 @@ export class FileRepository {
 
   upsert(file: Omit<FileRecord, 'id'>): number {
     const result = this.db.prepare(`
-      INSERT INTO file_records (path, language, content_hash, size_bytes, lines_total, indexed_at, is_deleted, summary, complexity_score)
-      VALUES (@path, @language, @contentHash, @sizeBytes, @linesTotal, @indexedAt, @isDeleted, @summary, @complexityScore)
+      INSERT INTO file_records (path, language, content_hash, size_bytes, lines_total, indexed_at, is_deleted, summary, complexity_score, change_count)
+      VALUES (@path, @language, @contentHash, @sizeBytes, @linesTotal, @indexedAt, @isDeleted, @summary, @complexityScore, @changeCount)
       ON CONFLICT(path) DO UPDATE SET
         language         = excluded.language,
         content_hash     = excluded.content_hash,
@@ -31,7 +32,8 @@ export class FileRepository {
         indexed_at       = excluded.indexed_at,
         is_deleted       = excluded.is_deleted,
         summary          = excluded.summary,
-        complexity_score = excluded.complexity_score
+        complexity_score = excluded.complexity_score,
+        change_count     = excluded.change_count
     `).run({
       path: file.path,
       language: file.language,
@@ -42,6 +44,7 @@ export class FileRepository {
       isDeleted: file.isDeleted ? 1 : 0,
       summary: file.summary,
       complexityScore: file.complexityScore,
+      changeCount: file.changeCount,
     });
     return result.lastInsertRowid as number;
   }
@@ -75,9 +78,9 @@ export class FileRepository {
     return row.total;
   }
 
-  getSummaries(): { path: string; summary: string | null; complexityScore: number }[] {
+  getSummaries(): { path: string; summary: string | null; complexityScore: number; changeCount: number }[] {
     return this.db.prepare(
-      'SELECT path, summary, complexity_score as complexityScore FROM file_records WHERE is_deleted = 0'
-    ).all() as { path: string; summary: string | null; complexityScore: number }[];
+      'SELECT path, summary, complexity_score as complexityScore, change_count as changeCount FROM file_records WHERE is_deleted = 0'
+    ).all() as { path: string; summary: string | null; complexityScore: number; changeCount: number }[];
   }
 }

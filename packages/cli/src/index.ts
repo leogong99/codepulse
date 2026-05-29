@@ -5,6 +5,8 @@ import { updateCommand } from './commands/update.js';
 import { contextCommand } from './commands/context.js';
 import { statsCommand } from './commands/stats.js';
 import { watchCommand } from './commands/watch.js';
+import { installHooksCommand, uninstallHooksCommand } from './commands/hooks.js';
+import { searchCommand } from './commands/search.js';
 
 const program = new Command();
 
@@ -64,6 +66,31 @@ program
   .option('-r, --root <path>', 'Repository root', '.')
   .action(async (opts) => {
     await watchCommand(resolve(opts.root));
+  });
+
+program
+  .command('search <query>')
+  .description('Search exported symbols by name')
+  .option('-r, --root <path>', 'Repository root', '.')
+  .option('-l, --limit <n>', 'Max results', '20')
+  .action((query, opts) => {
+    searchCommand(resolve(opts.root), query, Number(opts.limit));
+  });
+
+program
+  .command('install-hooks')
+  .description('Install git post-commit hook to auto-update index after every commit')
+  .option('-r, --root <path>', 'Repository root', '.')
+  .action((opts) => {
+    installHooksCommand(resolve(opts.root));
+  });
+
+program
+  .command('uninstall-hooks')
+  .description('Remove codepulse git hooks')
+  .option('-r, --root <path>', 'Repository root', '.')
+  .action((opts) => {
+    uninstallHooksCommand(resolve(opts.root));
   });
 
 program.parse();

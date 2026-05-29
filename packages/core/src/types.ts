@@ -22,6 +22,7 @@ export interface FileRecord {
   isDeleted: boolean;
   summary: string | null;
   complexityScore: number;
+  changeCount: number;
 }
 
 export interface CodeSymbol {

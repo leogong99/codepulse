@@ -10,7 +10,7 @@ import { extractSymbols } from '../parser/SymbolExtractor.js';
 import { extractImports } from '../parser/ImportExtractor.js';
 import { hashContent } from './HashUtil.js';
 import { walkFiles } from './FileWalker.js';
-import { getHeadCommit, getChangedFiles } from './GitDiff.js';
+import { getHeadCommit, getChangedFiles, getFileChangeCounts } from './GitDiff.js';
 import type { CodePulseConfig } from '../types.js';
 
 function buildFileSummary(
@@ -55,6 +55,7 @@ export class Indexer {
   private files: FileRepository;
   private symbols: SymbolRepository;
   private meta: MetaRepository;
+  private changeCounts: Map<string, number> = new Map();
 
   constructor(private db: DB, private repoRoot: string, private config: CodePulseConfig) {
     this.files = new FileRepository(db);
@@ -183,6 +184,7 @@ export class Indexer {
       isDeleted: false,
       summary: existing?.summary ?? null,
       complexityScore: existing?.complexityScore ?? 0,
+      changeCount: this.changeCounts.get(relativePath) ?? existing?.changeCount ?? 0,
     });
 
     // We use the actual file id (insert returns rowid, but on conflict we need the real id)
@@ -217,8 +219,9 @@ export class Indexer {
 
     const summary = buildFileSummary(langConfig.name, symbols, imports);
     const complexityScore = computeComplexity(record.linesTotal, symbols, imports);
+    const changeCount = this.changeCounts.get(relativePath) ?? record.changeCount;
 
-    this.files.upsert({ ...record, language: langConfig.name, summary, complexityScore });
+    this.files.upsert({ ...record, language: langConfig.name, summary, complexityScore, changeCount });
 
     this.symbols.deleteByFileId(record.id);
     if (symbols.length > 0) this.symbols.insertSymbols(record.id, symbols);
@@ -227,6 +230,7 @@ export class Indexer {
 
   async runFullWithParsing(onProgress?: (done: number, total: number) => void): Promise<IndexStats> {
     const start = Date.now();
+    this.changeCounts = getFileChangeCounts(this.repoRoot);
     const allFiles = await walkFiles(this.repoRoot, this.config);
 
     // First pass: record all files synchronously
@@ -292,6 +296,11 @@ export class Indexer {
           deleted++;
         }
       } else {
+        // Increment change_count for modified/added files
+        const existing = this.files.getByPath(change.path);
+        if (existing) {
+          this.changeCounts.set(change.path, existing.changeCount + 1);
+        }
         const result = this.indexFile(absPath, change.path);
         if (result !== 'skipped') {
           toReparse.push({ abs: absPath, rel: change.path });

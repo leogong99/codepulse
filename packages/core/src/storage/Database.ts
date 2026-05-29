@@ -1,6 +1,6 @@
 import BetterSqlite3 from 'better-sqlite3';
 
-const SCHEMA_VERSION = 2;
+const SCHEMA_VERSION = 3;
 
 const SCHEMA_SQL = `
 CREATE TABLE IF NOT EXISTS index_meta (
@@ -18,7 +18,8 @@ CREATE TABLE IF NOT EXISTS file_records (
   indexed_at       INTEGER NOT NULL,
   is_deleted       INTEGER NOT NULL DEFAULT 0,
   summary          TEXT,
-  complexity_score INTEGER NOT NULL DEFAULT 0
+  complexity_score INTEGER NOT NULL DEFAULT 0,
+  change_count     INTEGER NOT NULL DEFAULT 0
 );
 CREATE INDEX IF NOT EXISTS idx_file_language ON file_records(language);
 CREATE INDEX IF NOT EXISTS idx_file_deleted  ON file_records(is_deleted);
@@ -69,14 +70,16 @@ function runMigrations(db: DB): void {
   const existing = db.prepare("SELECT value FROM index_meta WHERE key = 'schema_version'").get() as { value: string } | undefined;
   const currentVersion = existing ? Number(existing.value) : 0;
 
-  if (currentVersion < 2) {
-    // Add summary and complexity_score columns if upgrading from v1
+  if (currentVersion < 3) {
     const cols = (db.prepare("PRAGMA table_info(file_records)").all() as { name: string }[]).map(r => r.name);
     if (!cols.includes('summary')) {
       db.exec('ALTER TABLE file_records ADD COLUMN summary TEXT');
     }
     if (!cols.includes('complexity_score')) {
       db.exec('ALTER TABLE file_records ADD COLUMN complexity_score INTEGER NOT NULL DEFAULT 0');
+    }
+    if (!cols.includes('change_count')) {
+      db.exec('ALTER TABLE file_records ADD COLUMN change_count INTEGER NOT NULL DEFAULT 0');
     }
   }
 

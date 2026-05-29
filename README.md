@@ -74,8 +74,9 @@ codepulse context --format markdown
 Keep the index up to date:
 
 ```bash
-codepulse update        # incremental (fast)
-codepulse watch         # auto-update on file changes
+codepulse update              # incremental (fast)
+codepulse watch               # auto-update on file changes
+codepulse install-hooks       # auto-update after every git commit (recommended)
 ```
 
 ### Option 2 — Claude Code Skill
@@ -132,11 +133,73 @@ The MCP server exposes three tools your AI editor can call on demand:
 | `codepulse update` | Incremental update (git-diff-aware) |
 | `codepulse update --full` | Force full re-index |
 | `codepulse context` | Emit context snapshot (default: 4000 tokens, XML) |
+| `codepulse context --auto` | Auto-scale budget by repo complexity |
+| `codepulse context --task "description"` | Rank files relevant to the task first |
 | `codepulse context --budget 8000` | Larger budget for bigger repos |
 | `codepulse context --focus src/auth` | Deep detail on one subsystem |
 | `codepulse context --format markdown` | Human-readable output |
+| `codepulse search <query>` | Search exported symbols by name |
+| `codepulse search <query> --limit 10` | Limit results |
 | `codepulse stats` | Show index stats |
 | `codepulse watch` | Auto-update on file changes |
+| `codepulse install-hooks` | Install git post-commit hook for auto-updates |
+| `codepulse uninstall-hooks` | Remove git hooks |
+
+---
+
+## Smart Context
+
+CodePulse ranks what goes into the snapshot so the most useful files fit within the budget:
+
+**Task-aware ranking** — pass `--task` to rank files by relevance to what you're working on:
+
+```bash
+codepulse context --auto --task "fix the login bug"
+```
+
+Keywords are extracted from your task description and matched against file paths, symbol names, exported function signatures, and stored file summaries. Files most relevant to your task appear first.
+
+**Git-aware ranking** — even without `--task`, CodePulse checks which files you've recently changed (`git diff`) and boosts those automatically. Files with a longer history of changes rank higher by default.
+
+**Auto budget** — `--auto` scales the token budget to your repo's complexity score (symbols × 2 + imports + lines/50). Tiny repos are skipped entirely:
+
+| Complexity | Budget |
+|---|---|
+| < 50 | skipped (0 tokens) |
+| 50–499 | 800 tokens |
+| 500–1499 | 2,000 tokens |
+| ≥ 1,500 | 4,000 tokens |
+
+If the budget is too small and files were cut off, CodePulse warns you and suggests the next tier.
+
+---
+
+## Symbol Search
+
+Search exported symbols across your entire indexed codebase:
+
+```bash
+codepulse search "validateToken"
+codepulse search "auth" --limit 10
+```
+
+Returns kind, name, signature, file path, and line number for every match — useful for navigating large repos without opening an editor.
+
+---
+
+## Auto-Update with Git Hooks
+
+Install a `post-commit` hook so the index updates automatically after every commit:
+
+```bash
+codepulse install-hooks
+```
+
+This appends a single line to `.git/hooks/post-commit` (or creates the file). It runs `codepulse update` after each commit — incremental, so it's fast. Remove it any time:
+
+```bash
+codepulse uninstall-hooks
+```
 
 ---
 
@@ -229,9 +292,10 @@ Tools available:
 
 ## How It Works
 
-1. **Index:** Tree-Sitter parses all source files, extracting exported symbols and import edges into a SQLite database (`.codepulse/index.db`)
-2. **Update:** On each `update`, only files changed since the last indexed git commit are re-parsed — a 50k-line repo updates in milliseconds
-3. **Context:** Given a token budget, a layered generator fills it from most to least important: repo overview → directory map → symbol table → import graph
+1. **Index:** Tree-Sitter parses all source files, extracting exported symbols, import edges, and a compact per-file summary into a SQLite database (`.codepulse/index.db`). Git history is scanned to record how often each file changes.
+2. **Update:** On each `update`, only files changed since the last indexed git commit are re-parsed — a 50k-line repo updates in milliseconds. With `install-hooks`, this runs automatically after every commit.
+3. **Context:** Given a token budget, a layered generator fills it from most to least important: repo overview → directory map → symbol table → import graph. Files are ranked by task relevance, then change frequency (most-edited files first), so the most useful content always fits within the budget.
+4. **Smart budget:** `--auto` scales the token budget to your repo's actual complexity — tiny repos are skipped entirely, saving 100% overhead.
 
 The index is stored per-repo (not globally) so each project has its own isolated snapshot.
 

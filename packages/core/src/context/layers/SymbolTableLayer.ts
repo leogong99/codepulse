@@ -9,12 +9,10 @@ export function renderSymbolTable(db: DB, budget: number, taskKeywords: string[]
   const fileRepo = new FileRepository(db);
   const symbols = repo.getAllExported();
 
-  // Build summary lookup
-  const summaryMap = new Map<string, string | null>();
-  if (taskKeywords.length > 0) {
-    for (const { path, summary } of fileRepo.getSummaries()) {
-      summaryMap.set(path, summary);
-    }
+  // Build summary + changeCount lookup
+  const fileMetaMap = new Map<string, { summary: string | null; changeCount: number }>();
+  for (const { path, summary, complexityScore: _c, ...rest } of fileRepo.getSummaries()) {
+    fileMetaMap.set(path, { summary, changeCount: (rest as { changeCount?: number }).changeCount ?? 0 });
   }
 
   // Group by file
@@ -24,12 +22,17 @@ export function renderSymbolTable(db: DB, budget: number, taskKeywords: string[]
     byFile.get(s.filePath)!.push(s);
   }
 
-  // Sort by task relevance first (using summary), then by symbol count
+  // Sort: task relevance first, then change frequency (hot files), then symbol count
   const sorted = [...byFile.entries()].sort((a, b) => {
-    const scoreDiff =
-      scoreFile(b[0], b[1], taskKeywords, summaryMap.get(b[0]) ?? null) -
-      scoreFile(a[0], a[1], taskKeywords, summaryMap.get(a[0]) ?? null);
-    return scoreDiff !== 0 ? scoreDiff : b[1].length - a[1].length;
+    const metaA = fileMetaMap.get(a[0]);
+    const metaB = fileMetaMap.get(b[0]);
+    const relevanceDiff =
+      scoreFile(b[0], b[1], taskKeywords, metaB?.summary ?? null) -
+      scoreFile(a[0], a[1], taskKeywords, metaA?.summary ?? null);
+    if (relevanceDiff !== 0) return relevanceDiff;
+    const changeDiff = (metaB?.changeCount ?? 0) - (metaA?.changeCount ?? 0);
+    if (changeDiff !== 0) return changeDiff;
+    return b[1].length - a[1].length;
   });
 
   const lines: string[] = [];

@@ -78,16 +78,23 @@ export function generateContext(db: DB, request: ContextRequest, config: CodePul
     };
   }
 
-  const budgets = allocateBudget(budgetTokens, config, hasFocus, layers);
+  // Reserve tokens for XML/Markdown wrapper overhead (~15 tokens per layer + outer tags)
+  const wrapperOverhead = request.format === 'xml' ? 10 + layers.length * 15 : 0;
+  const contentBudget = Math.max(budgetTokens - wrapperOverhead, 100);
+  const budgets = allocateBudget(contentBudget, config, hasFocus, layers);
 
   let remainingSurplus = 0;
+  let totalUsed = 0;
   const results: LayerResult[] = [];
 
   for (const { layer, tokens } of budgets) {
-    const layerBudget = tokens + remainingSurplus;
+    const remaining = contentBudget - totalUsed;
+    const layerBudget = Math.min(tokens + remainingSurplus, remaining);
+    if (layerBudget <= 0) break;
     const { content, truncated } = renderLayer(db, layer, layerBudget, request.focusPath, taskKeywords);
     const used = countTokens(content);
     remainingSurplus = truncated ? 0 : layerBudget - used;
+    totalUsed += used;
 
     results.push({ layer, tokensUsed: used, content, truncated });
   }
