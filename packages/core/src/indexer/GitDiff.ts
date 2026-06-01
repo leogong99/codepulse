@@ -16,6 +16,19 @@ export function getHeadCommit(repoRoot: string): string {
   }
 }
 
+export function getCommitsBehind(repoRoot: string, sinceCommit: string): number {
+  if (!sinceCommit) return -1;
+  try {
+    const out = execSync(
+      `git rev-list --count ${sinceCommit}..HEAD`,
+      { cwd: repoRoot, encoding: 'utf8' }
+    ).trim();
+    return parseInt(out, 10) || 0;
+  } catch {
+    return -1;
+  }
+}
+
 export function getFileChangeCounts(repoRoot: string): Map<string, number> {
   const counts = new Map<string, number>();
   try {

@@ -6,4 +6,5 @@ export { MetaRepository } from './storage/MetaRepository.js';
 export { Indexer } from './indexer/Indexer.js';
 export { generateContext } from './context/ContextGenerator.js';
 export { extractKeywords } from './context/TaskAnalyzer.js';
+export { getCommitsBehind } from './indexer/GitDiff.js';
 export type { IndexStats } from './indexer/Indexer.js';

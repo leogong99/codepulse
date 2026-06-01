@@ -215,7 +215,14 @@ export class Indexer {
     if (!record) return;
 
     const symbols = extractSymbols(tree, relativePath, record.id, langConfig.name, content);
-    const imports = extractImports(tree, relativePath, record.id, langConfig.name);
+    const rawImports = extractImports(tree, relativePath, record.id, langConfig.name);
+
+    // Normalize toPath: strip absolute repoRoot prefix so all paths are repo-relative
+    const prefix = this.repoRoot + '/';
+    const imports = rawImports.map(imp => ({
+      ...imp,
+      toPath: imp.toPath?.startsWith(prefix) ? imp.toPath.slice(prefix.length) : imp.toPath,
+    }));
 
     const summary = buildFileSummary(langConfig.name, symbols, imports);
     const complexityScore = computeComplexity(record.linesTotal, symbols, imports);

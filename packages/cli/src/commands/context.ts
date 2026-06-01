@@ -2,9 +2,8 @@ import { join } from 'path';
 import { existsSync } from 'fs';
 import { execSync } from 'child_process';
 import pc from 'picocolors';
-import { openDatabase, generateContext, DEFAULT_CONFIG } from '@aicodepulse/core';
+import { openDatabase, generateContext, DEFAULT_CONFIG, extractKeywords, getCommitsBehind, MetaRepository } from '@aicodepulse/core';
 import type { ContextRequest } from '@aicodepulse/core';
-import { extractKeywords } from '@aicodepulse/core';
 
 function getGitChangedKeywords(repoRoot: string): string[] {
   try {
@@ -56,6 +55,13 @@ export async function contextCommand(repoRoot: string, options: ContextOptions):
   };
 
   const result = generateContext(db, request, DEFAULT_CONFIG);
+
+  // Stale index warning
+  const meta = new MetaRepository(db).getIndexMeta();
+  const commitsBehind = getCommitsBehind(repoRoot, meta.lastIndexedCommit);
+  if (commitsBehind > 0) {
+    process.stderr.write(pc.yellow(`[codepulse] index is ${commitsBehind} commit${commitsBehind !== 1 ? 's' : ''} behind HEAD — run \`codepulse update\` to refresh\n`));
+  }
 
   if (result.skipped) {
     process.stderr.write(pc.dim('[codepulse] repo too small to benefit from context injection — skipped\n'));

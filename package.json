@@ -2,7 +2,10 @@
   "name": "codepulse-monorepo",
   "private": true,
   "workspaces": [
-    "packages/*"
+    "packages/core",
+    "packages/cli",
+    "packages/mcp",
+    "packages/vscode"
   ],
   "scripts": {
     "build": "npm run build --workspaces --legacy-peer-deps",

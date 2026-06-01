@@ -7,6 +7,8 @@ import { statsCommand } from './commands/stats.js';
 import { watchCommand } from './commands/watch.js';
 import { installHooksCommand, uninstallHooksCommand } from './commands/hooks.js';
 import { searchCommand } from './commands/search.js';
+import { statusCommand } from './commands/status.js';
+import { blastRadiusCommand } from './commands/blast-radius.js';
 
 const program = new Command();
 
@@ -75,6 +77,24 @@ program
   .option('-l, --limit <n>', 'Max results', '20')
   .action((query, opts) => {
     searchCommand(resolve(opts.root), query, Number(opts.limit));
+  });
+
+program
+  .command('status')
+  .description('Show index status and staleness')
+  .option('-r, --root <path>', 'Repository root', '.')
+  .option('--json', 'Output as JSON')
+  .action((opts) => {
+    statusCommand(resolve(opts.root), opts.json ?? false);
+  });
+
+program
+  .command('blast-radius <file>')
+  .description('Show which files are affected if a given file changes')
+  .option('-r, --root <path>', 'Repository root', '.')
+  .option('-d, --depth <n>', 'Max traversal depth', '2')
+  .action((file, opts) => {
+    blastRadiusCommand(resolve(opts.root), file, Number(opts.depth));
   });
 
 program

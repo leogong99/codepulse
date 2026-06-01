@@ -1,0 +1,81 @@
+{
+  "name": "codepulse-vscode",
+  "displayName": "CodePulse",
+  "description": "Token-efficient codebase indexer for AI coding tools",
+  "version": "0.1.0",
+  "publisher": "aicodepulse",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/aicodepulse/codepulse"
+  },
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": ["Other"],
+  "keywords": ["ai", "context", "tokens", "indexer", "codepulse"],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./dist/extension.cjs",
+  "contributes": {
+    "commands": [
+      {
+        "command": "codepulse.indexProject",
+        "title": "CodePulse: Index Project"
+      },
+      {
+        "command": "codepulse.updateIndex",
+        "title": "CodePulse: Update Index"
+      },
+      {
+        "command": "codepulse.copyContext",
+        "title": "CodePulse: Copy Context to Clipboard"
+      },
+      {
+        "command": "codepulse.showBlastRadius",
+        "title": "CodePulse: Show Blast Radius"
+      },
+      {
+        "command": "codepulse.showStatus",
+        "title": "CodePulse: Show Index Status"
+      },
+      {
+        "command": "codepulse.installHooks",
+        "title": "CodePulse: Install Git Hooks"
+      }
+    ],
+    "configuration": {
+      "title": "CodePulse",
+      "properties": {
+        "codepulse.cliPath": {
+          "type": "string",
+          "default": "codepulse",
+          "description": "Path to the codepulse CLI executable"
+        },
+        "codepulse.autoUpdateOnSave": {
+          "type": "boolean",
+          "default": false,
+          "description": "Automatically update the index when files are saved"
+        },
+        "codepulse.contextFormat": {
+          "type": "string",
+          "enum": ["xml", "markdown"],
+          "default": "xml",
+          "description": "Output format for context snapshots"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "package": "vsce package --no-dependencies"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/vscode": "^1.85.0",
+    "tsup": "^8.2.0",
+    "typescript": "^5.5.0"
+  }
+}

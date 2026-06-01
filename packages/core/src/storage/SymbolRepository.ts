@@ -104,10 +104,38 @@ export class SymbolRepository {
   }
 
   getImportersOf(filePath: string): string[] {
+    // ESM imports use .js extension for .ts source files — query both variants
+    const variants = new Set([filePath]);
+    if (filePath.endsWith('.ts')) variants.add(filePath.slice(0, -3) + '.js');
+    else if (filePath.endsWith('.tsx')) variants.add(filePath.slice(0, -4) + '.js');
+    else if (filePath.endsWith('.js')) variants.add(filePath.slice(0, -3) + '.ts');
+
+    const placeholders = [...variants].map(() => '?').join(', ');
     const rows = this.db.prepare(
-      'SELECT DISTINCT from_path FROM import_edges WHERE to_path = ?'
-    ).all(filePath) as { from_path: string }[];
+      `SELECT DISTINCT from_path FROM import_edges WHERE to_path IN (${placeholders})`
+    ).all(...variants) as { from_path: string }[];
     return rows.map(r => r.from_path);
+  }
+
+  getBlastRadius(filePath: string, maxDepth = 2): { path: string; depth: number }[] {
+    const visited = new Set<string>([filePath]);
+    const result: { path: string; depth: number }[] = [];
+    let frontier = [filePath];
+
+    for (let depth = 1; depth <= maxDepth && frontier.length > 0; depth++) {
+      const next: string[] = [];
+      for (const f of frontier) {
+        for (const importer of this.getImportersOf(f)) {
+          if (!visited.has(importer)) {
+            visited.add(importer);
+            result.push({ path: importer, depth });
+            next.push(importer);
+          }
+        }
+      }
+      frontier = next;
+    }
+    return result;
   }
 
   getTopImportedFiles(limit = 20): { path: string; importerCount: number }[] {
